@@ -1,0 +1,48 @@
+name: Build Vinegar Binary
+
+# Kapan workflow ini akan dijalankan?
+on:
+  # Bisa dijalankan manual dari tab Actions
+  workflow_dispatch:
+  # Atau, bisa juga dijalankan otomatis setiap ada perubahan di cabang utama (opsional)
+  # push:
+  #   branches: [ "master" ]
+
+jobs:
+  build:
+    # Menjalankan proses kompilasi di lingkungan Ubuntu terbaru
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Mendownload kode sumber dari repositori Anda
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Menyiapkan Go dengan versi yang sesuai
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22' # Gunakan versi yang direkomendasikan Vinegar
+
+      # 3. Menginstal library yang diperlukan untuk kompilasi
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libglib2.0-dev libvulkan-dev libgtk-4-dev
+
+      # 4. Membuat file resource yang diperlukan (seperti yang gagal sebelumnya)
+      - name: Generate gresource
+        run: |
+          glib-compile-resources --sourcedir=data --target=internal/gutil/vinegar.gresource data/vinegar.gresource.xml
+
+      # 5. Mengkompilasi Vinegar menjadi binary
+      - name: Build Vinegar
+        run: |
+          go build -o vinegar ./cmd/vinegar
+
+      # 6. Mengupload binary yang sudah jadi sebagai artifact
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: vinegar-binary
+          path: ./vinegar
